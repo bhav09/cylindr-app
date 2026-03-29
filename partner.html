@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Partner Portal | Cylindr</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <style>
+        body { background-color: #f1f3f4; }
+    </style>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="logo">
+            <span class="material-icons-round">business</span>
+            <h1>Partner Portal</h1>
+        </div>
+        <div class="actions">
+            <a href="index.html" class="partner-link">Back to Map</a>
+            <button id="logout-btn" class="icon-btn hidden" aria-label="Logout">
+                <span class="material-icons-round">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="container" style="margin-top: 1rem;">
+        
+        <!-- Login Section -->
+        <div id="login-section" class="card">
+            <h2>Agency Login</h2>
+            <p style="margin-bottom: 1.5rem;">Update your stock status to help customers and reduce phone calls during shortages.</p>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" class="form-control" required placeholder="e.g. test@indane.com" value="test@indane.com">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" required placeholder="••••••••" value="demo123">
+                </div>
+                <div id="login-error" style="color: var(--status-red); font-size: 0.875rem; margin-bottom: 1rem; display: none;"></div>
+                <button type="submit" class="primary-btn" style="width: 100%;">Login to Dashboard</button>
+            </form>
+            
+            <div style="margin-top: 1.5rem; text-align: center; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <p>Not listed on the map yet?</p>
+                <a href="register.html" class="partner-link" style="display: inline-block; margin-top: 0.5rem;">Register your agency</a>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="hidden">
+            <div class="card">
+                <h2 id="agency-name">Welcome, Agency Owner</h2>
+                
+                <div style="margin: 1.5rem 0; display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-color); border-radius: var(--radius-md);">
+                    <div>
+                        <span style="font-size: 0.875rem; color: var(--text-sec); display: block; margin-bottom: 0.25rem;">Current Public Status:</span>
+                        <span id="current-status-badge" class="status-badge unknown">Loading...</span>
+                    </div>
+                </div>
+                <p id="last-updated-text" style="font-size: 0.8rem; margin-bottom: 1.5rem; color: var(--text-sec);">Last updated: -</p>
+                
+                <h3 style="margin-bottom: 0.5rem;">Update Stock Status</h3>
+                <p style="font-size: 0.875rem; color: var(--text-sec); margin-bottom: 1rem;">Tap to instantly update your status on the map for all nearby users.</p>
+                
+                <div class="report-buttons">
+                    <button class="report-btn update-stock-btn" data-status="available">
+                        <span class="status-dot green"></span> In Stock
+                    </button>
+                    <button class="report-btn update-stock-btn" data-status="low">
+                        <span class="status-dot yellow"></span> Low
+                    </button>
+                    <button class="report-btn update-stock-btn" data-status="out">
+                        <span class="status-dot red"></span> Out
+                    </button>
+                </div>
+                
+                <div id="update-feedback" style="margin-top: 1rem; text-align: center; font-size: 0.875rem; color: var(--status-green); opacity: 0; transition: opacity 0.3s;">
+                    Status updated successfully!
+                </div>
+
+                <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Agency Details</h3>
+                <p style="font-size: 0.8rem; color: var(--text-sec); margin-bottom: 1rem;">Let customers know how you operate today.</p>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                        <input type="checkbox" id="accept-walkin" class="feature-toggle" checked> Walk-ins Accepted (Uncheck for Delivery Only)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                        <input type="checkbox" id="accept-upi" class="feature-toggle" checked> UPI Accepted (Uncheck for Cash Only)
+                    </label>
+                </div>
+                
+                <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Cylinder Availability</h3>
+                <p style="font-size: 0.8rem; color: var(--text-sec); margin-bottom: 1rem;">Which sizes do you have in stock?</p>
+                <div class="form-group" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 0.25rem; font-weight: normal;"><input type="checkbox" class="type-toggle" value="14.2kg" checked> 14.2kg</label>
+                    <label style="display: flex; align-items: center; gap: 0.25rem; font-weight: normal;"><input type="checkbox" class="type-toggle" value="19kg" checked> 19kg</label>
+                    <label style="display: flex; align-items: center; gap: 0.25rem; font-weight: normal;"><input type="checkbox" class="type-toggle" value="5kg"> 5kg</label>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Weekly Insights</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div style="text-align: center; padding: 1.5rem 1rem; background: var(--bg-color); border-radius: var(--radius-md);">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--primary);" id="views-count">0</div>
+                        <div style="font-size: 0.8rem; color: var(--text-sec); margin-top: 0.25rem;">Listing Views</div>
+                    </div>
+                    <div style="text-align: center; padding: 1.5rem 1rem; background: var(--bg-color); border-radius: var(--radius-md);">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--status-green);" id="calls-saved">0</div>
+                        <div style="font-size: 0.8rem; color: var(--text-sec); margin-top: 0.25rem;">Calls Deflected</div>
+                    </div>
+                </div>
+                <p style="font-size: 0.8rem; text-align: center; margin-top: 1.5rem; color: var(--text-sec);">
+                    Keeping your status updated helps reduce customer phone inquiries during shortages.
+                </p>
+            </div>
+        </div>
+        
+    </main>
+
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/partner.js"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Register Agency | Cylindr</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <style>
+        body { background-color: #f1f3f4; }
+    </style>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="logo">
+            <span class="material-icons-round">app_registration</span>
+            <h1>Register Agency</h1>
+        </div>
+        <div class="actions">
+            <a href="partner.html" class="partner-link">Back to Login</a>
+        </div>
+    </header>
+
+    <main class="container" style="margin-top: 1rem;">
+        <div class="card" id="registration-card">
+            <h2>Add Your Agency to the Map</h2>
+            <p style="margin-bottom: 1.5rem; color: var(--text-sec);">Join Cylindr to manage your stock status in real-time and reduce incoming calls.</p>
+            
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="agency-name">Gas Agency Name</label>
+                    <input type="text" id="agency-name" class="form-control" required placeholder="e.g. Ramesh Gas Agency" value="Demo Gas Agency">
+                </div>
+                
+                <div class="form-group">
+                    <label for="company">Oil Company</label>
+                    <select id="company" class="form-control" required>
+                        <option value="">Select Company</option>
+                        <option value="Indane" selected>Indane (IOCL)</option>
+                        <option value="HP Gas">HP Gas (HPCL)</option>
+                        <option value="Bharat Gas">Bharat Gas (BPCL)</option>
+                        <option value="Other">Other Private Supplier</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dealer-code">Dealer License Code / SAP Code</label>
+                    <input type="text" id="dealer-code" class="form-control" required placeholder="Used for official verification" value="IND-49201-XYZ">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Customer Booking Phone Number</label>
+                    <input type="tel" id="phone" class="form-control" required placeholder="+91" value="+919876543210">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Owner Email Address</label>
+                    <input type="email" id="email" class="form-control" required placeholder="For login dashboard" value="test@indane.com">
+                </div>
+                
+                <div class="form-group">
+                    <label>Location</label>
+                    <p style="font-size: 0.8rem; color: var(--text-sec); margin-bottom: 0.5rem;">We will use your device's current location as the shop location.</p>
+                    <button type="button" id="get-location-btn" class="secondary-btn" style="width: 100%;">
+                        <span class="material-icons-round">my_location</span>
+                        Get Current Location
+                    </button>
+                    <div id="location-status" style="font-size: 0.8rem; color: var(--status-green); margin-top: 0.5rem; display: none;">Location acquired successfully.</div>
+                </div>
+
+                <div id="error-message" style="color: var(--status-red); font-size: 0.875rem; margin-bottom: 1rem; display: none;"></div>
+                
+                <button type="submit" id="submit-btn" class="primary-btn" style="width: 100%; margin-top: 1rem;" disabled>Submit Registration</button>
+            </form>
+        </div>
+
+        <div class="card hidden" id="success-card" style="text-align: center; padding: 3rem 1rem;">
+            <span class="material-icons-round" style="font-size: 4rem; color: var(--status-green); margin-bottom: 1rem;">check_circle</span>
+            <h2>Registration Submitted!</h2>
+            <p style="margin-bottom: 1.5rem; color: var(--text-sec);">We have received your details. We will verify your dealer code and email you your login credentials shortly.</p>
+            <a href="index.html" class="primary-btn" style="text-decoration: none;">Return to Map</a>
+        </div>
+    </main>
+
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/register.js"></script>
+</body>
+</html>

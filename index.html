@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cylindr</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Full Screen Loading Overlay -->
+    <div id="welcome-overlay" class="welcome-overlay hidden">
+        <div class="welcome-content">
+            <div class="welcome-brand">
+                <span class="material-icons-round welcome-icon">local_fire_department</span>
+                <h1 class="welcome-title">Cylindr</h1>
+            </div>
+            <p class="welcome-subtitle">Find available LPG cylinders near you instantly.</p>
+            
+            <div class="welcome-options">
+                <button id="btn-consumer" class="welcome-btn primary-welcome">
+                    <span class="material-icons-round">person_search</span>
+                    <div class="welcome-btn-text">
+                        <strong>I need a cylinder</strong>
+                        <span>Find agencies & check stock</span>
+                    </div>
+                </button>
+                
+                <button id="btn-distributor" class="welcome-btn secondary-welcome">
+                    <span class="material-icons-round">storefront</span>
+                    <div class="welcome-btn-text">
+                        <strong>I'm a Distributor</strong>
+                        <span>Manage my agency listing</span>
+                    </div>
+                </button>
+            </div>
+            <p class="welcome-note">We need your location to show nearby options. Your preference will be saved for next time.</p>
+        </div>
+    </div>
+
+    <!-- Full Screen Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loader-content">
+            <span class="material-icons-round loader-icon">local_fire_department</span>
+            <h2>Finding LPG Agencies...</h2>
+            <p>Please wait while we locate stock near you.</p>
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <header class="top-bar">
+        <div class="logo">
+            <span class="material-icons-round">local_fire_department</span>
+            <h1>Cylindr</h1>
+        </div>
+        <div class="actions" style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="position: relative; display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.2rem;">
+                <span class="material-icons-round" style="font-size: 1.2rem; color: var(--text-sec); padding-left: 0.2rem;">language</span>
+                <select id="lang-select" class="lang-select" style="border: none; background: transparent; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--text-main); cursor: pointer; outline: none;">
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                    <option value="bn">বাংলা (Bengali)</option>
+                    <option value="te">తెలుగు (Telugu)</option>
+                    <option value="mr">मराठी (Marathi)</option>
+                    <option value="ta">தமிழ் (Tamil)</option>
+                    <option value="gu">ગુજરાતી (Gujarati)</option>
+                    <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                    <option value="ml">മലയാളം (Malayalam)</option>
+                    <option value="pa">ਪੰਜਾਬી (Punjabi)</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filters Container -->
+    <div class="filters-container">
+        <button class="filter-chip active" data-filter="all" data-i18n="filterAll">All Sizes</button>
+        <button class="filter-chip" data-filter="14.2kg" data-i18n="filter14">14.2kg (Home)</button>
+        <button class="filter-chip" data-filter="19kg" data-i18n="filter19">19kg (Comml)</button>
+        <button class="filter-chip" data-filter="5kg" data-i18n="filter5">5kg (Mini)</button>
+    </div>
+
+    <!-- Main Map Container -->
+    <main id="map"></main>
+
+    <!-- Floating Map Controls -->
+    <div class="map-controls">
+        <button id="recenter-btn" class="floating-btn" aria-label="Locate Me">
+            <span class="material-icons-round">my_location</span>
+        </button>
+    </div>
+
+    <!-- Map Legend -->
+    <div id="map-legend" class="map-legend">
+        <div class="legend-item">
+            <span class="legend-color green"></span>
+            <span>In Stock</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color yellow"></span>
+            <span>Low Stock</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color red"></span>
+            <span>Out of Stock</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color gray"></span>
+            <span>Unknown</span>
+        </div>
+    </div>
+
+    <!-- Bottom Sheet for Distributor Details -->
+    <div id="bottom-sheet" class="bottom-sheet hidden">
+        <div class="sheet-handle"></div>
+        <div class="sheet-content">
+            <div class="distributor-header">
+                <div>
+                    <h2 id="sheet-title">Distributor Name</h2>
+                    <p id="sheet-company" class="company-name">Company</p>
+                </div>
+                <div id="sheet-status-badge" class="status-badge">Unknown</div>
+            </div>
+            
+            <div class="distributor-info">
+                <div class="info-row">
+                    <span class="material-icons-round">update</span>
+                    <span id="sheet-last-updated">Updated: N/A</span>
+                </div>
+                <div class="info-row">
+                    <span class="material-icons-round">directions_walk</span>
+                    <span id="sheet-distance">Distance: -- km</span>
+                </div>
+                <div class="info-row hidden" id="sheet-phone-container">
+                    <span class="material-icons-round">phone</span>
+                    <a href="#" id="sheet-phone" style="color: var(--primary); text-decoration: none;">Call Agency</a>
+                </div>
+                <div class="info-row" style="margin-top: 0.5rem; font-size: 0.8rem;">
+                    <span class="material-icons-round" style="font-size: 1rem; color: var(--text-sec);">visibility</span>
+                    <span id="sheet-views" style="color: var(--text-sec);"><span data-i18n-format="checkedToday" id="sheet-views-count-text">Views today: <strong id="sheet-views-count">0</strong></span></span>
+                </div>
+                
+                <!-- Features Badges -->
+                <div class="features-badges" id="sheet-features" style="margin-top: 0.5rem;">
+                    <span class="feature-badge" id="badge-walkin"><span class="material-icons-round">storefront</span> <span data-i18n="walkIn">Walk-ins</span></span>
+                    <span class="feature-badge" id="badge-delivery" style="display:none;"><span class="material-icons-round">local_shipping</span> <span data-i18n="deliveryOnly">Delivery Only</span></span>
+                    <span class="feature-badge" id="badge-upi"><span class="material-icons-round">qr_code_scanner</span> <span data-i18n="upi">UPI Accepted</span></span>
+                    <span class="feature-badge" id="badge-cash" style="display:none;"><span class="material-icons-round">payments</span> <span data-i18n="cashOnly">Cash Only</span></span>
+                </div>
+            </div>
+
+            <div class="actions-grid">
+                <button id="btn-directions" class="primary-btn">
+                    <span class="material-icons-round">directions</span>
+                    <span data-i18n="directions">Directions</span>
+                </button>
+                <button id="btn-notify" class="secondary-btn hidden">
+                    <span class="material-icons-round">notifications_active</span>
+                    <span data-i18n="notify">Alert Me</span>
+                </button>
+                <button id="btn-share" class="secondary-btn">
+                    <span class="material-icons-round">share</span>
+                    <span data-i18n="share">Share</span>
+                </button>
+            </div>
+
+            <div class="report-section">
+                <h3 data-i18n="reportTitle">Report Status</h3>
+                <p class="subtitle" data-i18n="reportSubtitle">Help others by reporting what you see</p>
+                <div class="report-buttons">
+                    <button class="report-btn available" data-status="available">
+                        <span class="status-dot green"></span> <span data-i18n="inStock">In Stock</span>
+                    </button>
+                    <button class="report-btn low" data-status="low">
+                        <span class="status-dot yellow"></span> <span data-i18n="lowStock">Low</span>
+                    </button>
+                    <button class="report-btn out" data-status="out">
+                        <span class="status-dot red"></span> <span data-i18n="outOfStock">Out</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations Overlay (Floating over map) -->
+    <div id="recommendation-overlay" class="recommendation-overlay hidden">
+        <div class="rec-header">
+            <span class="material-icons-round star-icon">star</span>
+            <span>Best Option Right Now</span>
+        </div>
+        <div class="rec-body" id="rec-body-content">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Application Scripts -->
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/score.js"></script>
+    <script type="module" src="js/share.js"></script>
+    <script type="module" src="js/reports.js"></script>
+    <script type="module" src="js/app.js"></script>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js');
+            });
+        }
+    </script>
+</body>
+</html>

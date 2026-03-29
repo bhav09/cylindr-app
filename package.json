@@ -1,0 +1,27 @@
+{
+  "name": "lpg",
+  "version": "1.0.0",
+  "description": "",
+  "main": "service-worker.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "transform": {},
+    "moduleNameMapper": {
+      "^./firebase.js$": "<rootDir>/tests/mocks/firebase.mock.js"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "jsdom": "^29.0.1"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.7.0"
+  }
+}

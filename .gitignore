@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Firebase secrets - NEVER commit these
+serviceAccountKey.json
+firebase-debug.log
+firebase-debug.*.log
+
+# Seeding artifacts
+seeded_agencies_backup.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local

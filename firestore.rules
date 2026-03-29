@@ -1,0 +1,50 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // DISTRIBUTORS COLLECTION
+    match /distributors/{distributorId} {
+      // Anyone can read distributor data (required for the map)
+      allow read: if true;
+      
+      // Allow authenticated users to increment views_today only
+      allow update: if request.auth != null && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views_today']) &&
+                       request.resource.data.views_today is int;
+      
+      // Allow authenticated partners to update their own distributor record
+      allow update: if request.auth != null && 
+                       !request.auth.token.isAnonymous &&
+                       request.auth.uid == distributorId;
+                       
+      // Creating/deleting distributors is admin-only (via Admin SDK in scripts)
+      allow create, delete: if false;
+    }
+
+    // REPORTS COLLECTION (User check-ins)
+    match /reports/{reportId} {
+      // Authenticated users can create reports with validated schema
+      allow create: if request.auth != null &&
+                       request.resource.data.keys().hasAll(['distributor_id', 'status', 'timestamp', 'user_id']) &&
+                       request.resource.data.status in ['available', 'low', 'out'] &&
+                       request.resource.data.user_id == request.auth.uid;
+                       
+      // No client reads (prevents scraping). Admin SDK reads for consensus.
+      allow read, update, delete: if false;
+    }
+
+    // PENDING PARTNERS COLLECTION
+    match /pending_partners/{docId} {
+      // Anyone can submit a registration (with size limits)
+      allow create: if request.resource.data.keys().hasAll(['name', 'oil_company', 'lat', 'lng', 'email']) &&
+                       request.resource.data.name is string &&
+                       request.resource.data.name.size() <= 100 &&
+                       request.resource.data.email is string &&
+                       request.resource.data.email.size() <= 100;
+      
+      // Only admins can read/update/delete (enforced by Firebase Admin SDK)
+      allow read, update, delete: if false;
+    }
+  }
+}
