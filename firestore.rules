@@ -8,10 +8,10 @@ service cloud.firestore {
       // Anyone can read distributor data (required for the map)
       allow read: if true;
       
-      // Allow authenticated users to increment views_today only
+      // Allow authenticated users to increment views_today safely
       allow update: if request.auth != null && 
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views_today']) &&
-                       request.resource.data.views_today is int;
+                       request.resource.data.views_today == resource.data.views_today + 1;
       
       // Allow authenticated partners to update their own distributor record
       allow update: if request.auth != null && 
@@ -28,7 +28,8 @@ service cloud.firestore {
       allow create: if request.auth != null &&
                        request.resource.data.keys().hasAll(['distributor_id', 'status', 'timestamp', 'user_id']) &&
                        request.resource.data.status in ['available', 'low', 'out'] &&
-                       request.resource.data.user_id == request.auth.uid;
+                       request.resource.data.user_id == request.auth.uid &&
+                       request.resource.data.timestamp == request.time;
                        
       // No client reads (prevents scraping). Admin SDK reads for consensus.
       allow read, update, delete: if false;
@@ -41,7 +42,9 @@ service cloud.firestore {
                        request.resource.data.name is string &&
                        request.resource.data.name.size() <= 100 &&
                        request.resource.data.email is string &&
-                       request.resource.data.email.size() <= 100;
+                       request.resource.data.email.size() <= 100 &&
+                       request.resource.data.lat is number &&
+                       request.resource.data.lng is number;
       
       // Only admins can read/update/delete (enforced by Firebase Admin SDK)
       allow read, update, delete: if false;
