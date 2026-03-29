@@ -16,3 +16,9 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# AI/Dev tooling (session data, interaction logs)
+.codemeter/
+
+# Internal documents
+*.docx

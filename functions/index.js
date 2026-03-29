@@ -5,20 +5,40 @@ const fetch = require('node-fetch');
 admin.initializeApp();
 const db = admin.firestore();
 
-// 1. DYNAMIC MAP SCRAPER (Called when a user opens the app in a new location)
+// ============================================================
+// 1. DYNAMIC MAP SCRAPER
+// Requires authentication. Validates coordinates are inside India.
+// Rate-limited: skips if data already exists in the region.
+// ============================================================
 exports.fetchLocalAgencies = functions.https.onCall(async (data, context) => {
-    const { lat, lng, radiusKm = 10 } = data;
-
-    if (!lat || !lng) {
-        throw new functions.https.HttpsError('invalid-argument', 'Latitude and Longitude are required.');
+    // AUTH CHECK: Must be a logged-in user
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'You must be signed in to use this feature.'
+        );
     }
 
-    console.log(`Checking for agencies near ${lat}, ${lng} within ${radiusKm}km...`);
+    const { lat, lng, radiusKm = 10 } = data;
+
+    // INPUT VALIDATION: lat/lng must be numbers
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+        throw new functions.https.HttpsError('invalid-argument', 'Latitude and Longitude must be numbers.');
+    }
+
+    // GEO VALIDATION: Must be inside India's bounding box
+    if (lat < 6.0 || lat > 36.0 || lng < 68.0 || lng > 98.0) {
+        throw new functions.https.HttpsError('invalid-argument', 'Coordinates must be within India.');
+    }
+
+    // RADIUS VALIDATION: Clamp to prevent absurdly large queries
+    const safeRadius = Math.min(Math.max(radiusKm, 1), 30);
+
+    console.log(`[fetchLocalAgencies] User ${context.auth.uid} requesting near ${lat}, ${lng} within ${safeRadius}km`);
 
     // Check if we already have data in this area to avoid spamming the Overpass API
-    // (A simple bounding box check in Firestore)
-    const latOffset = radiusKm / 111.0;
-    const lngOffset = radiusKm / (111.0 * Math.cos(lat * (Math.PI / 180.0)));
+    const latOffset = safeRadius / 111.0;
+    const lngOffset = safeRadius / (111.0 * Math.cos(lat * (Math.PI / 180.0)));
 
     const snapshot = await db.collection('distributors')
         .where('lat', '>=', lat - latOffset)
@@ -34,7 +54,7 @@ exports.fetchLocalAgencies = functions.https.onCall(async (data, context) => {
     console.log("No data found. Triggering Overpass API scrape...");
 
     // Build the Overpass Query
-    const radiusMeters = radiusKm * 1000;
+    const radiusMeters = safeRadius * 1000;
     const query = `
         [out:json][timeout:25];
         (
@@ -73,7 +93,7 @@ exports.fetchLocalAgencies = functions.https.onCall(async (data, context) => {
             const existingQuery = await db.collection('distributors').where('osm_id', '==', node.id).get();
             if (!existingQuery.empty) continue;
 
-            const docRef = db.collection('distributors').doc(); // Auto-generate ID
+            const docRef = db.collection('distributors').doc();
             batch.set(docRef, {
                 name: name,
                 oil_company: company,
@@ -111,19 +131,40 @@ exports.fetchLocalAgencies = functions.https.onCall(async (data, context) => {
     }
 });
 
-// 2. INCREMENT VIEWS CLOUD FUNCTION
+// ============================================================
+// 2. INCREMENT VIEWS — Secured
+// Requires authentication. Validates distributorId format.
+// ============================================================
 exports.incrementAgencyViews = functions.https.onCall(async (data, context) => {
+    // AUTH CHECK
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'You must be signed in to use this feature.'
+        );
+    }
+
     const { distributorId } = data;
-    if (!distributorId) return null;
+
+    // INPUT VALIDATION: distributorId must be a non-empty string of reasonable length
+    if (!distributorId || typeof distributorId !== 'string' || distributorId.length > 128) {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid distributor ID.');
+    }
 
     const docRef = db.collection('distributors').doc(distributorId);
     
     try {
+        const docSnap = await docRef.get();
+        if (!docSnap.exists) {
+            throw new functions.https.HttpsError('not-found', 'Distributor not found.');
+        }
+
         await docRef.update({
             views_today: admin.firestore.FieldValue.increment(1)
         });
         return { success: true };
     } catch (err) {
+        if (err instanceof functions.https.HttpsError) throw err;
         console.error("Failed to increment view:", err);
         return { success: false };
     }

@@ -1,14 +1,14 @@
-const CACHE_NAME = 'lpg-finder-v6';
+const CACHE_NAME = 'lpg-finder-v7';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/css/styles.css',
-  '/js/app.js',
-  '/js/firebase.js',
-  '/js/auth.js',
-  '/js/score.js',
-  '/js/share.js',
-  '/js/reports.js',
+  './',
+  './index.html',
+  './css/styles.css',
+  './js/app.js',
+  './js/firebase.js',
+  './js/auth.js',
+  './js/score.js',
+  './js/share.js',
+  './js/reports.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://fonts.googleapis.com/icon?family=Material+Icons+Round'
@@ -35,7 +35,7 @@ self.addEventListener('fetch', event => {
   // Network-first strategy for Google Maps tiles
   if (event.request.url.includes('google.com/vt/lyrs')) {
       event.respondWith(
-          caches.open('map-tiles-v6').then(cache => {
+          caches.open('map-tiles-v7').then(cache => {
               return fetch(event.request).then(response => {
                   cache.put(event.request, response.clone());
                   return response;
@@ -72,7 +72,7 @@ self.addEventListener('fetch', event => {
 });
 
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME, 'map-tiles-v6'];
+  const cacheWhitelist = [CACHE_NAME, 'map-tiles-v7'];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(

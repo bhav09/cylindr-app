@@ -89,11 +89,20 @@ function applyTranslations() {
         }
     });
 
-    // Special formats (e.g. checkedToday)
+    // Special formats (e.g. checkedToday) — safe DOM construction, no innerHTML
     const viewsEl = document.getElementById('sheet-views-count-text');
     if (viewsEl && currentSelectedDistributor) {
-        let text = dict['checkedToday'].replace('{n}', `<strong id="sheet-views-count">${currentSelectedDistributor.views_today || 0}</strong>`);
-        viewsEl.innerHTML = text;
+        const template = dict['checkedToday'];
+        const count = String(currentSelectedDistributor.views_today || 0);
+        // Split the template around {n} and rebuild safely
+        const parts = template.split('{n}');
+        viewsEl.textContent = ''; // Clear
+        viewsEl.appendChild(document.createTextNode(parts[0] || ''));
+        const strong = document.createElement('strong');
+        strong.id = 'sheet-views-count';
+        strong.textContent = count;
+        viewsEl.appendChild(strong);
+        if (parts[1]) viewsEl.appendChild(document.createTextNode(parts[1]));
     }
 }
 

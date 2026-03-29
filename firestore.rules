@@ -3,51 +3,101 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // ============================================================
     // DISTRIBUTORS COLLECTION
+    // ============================================================
     match /distributors/{distributorId} {
       // Anyone can read distributor data (required for the map)
       allow read: if true;
       
-      // Allow authenticated users to increment views_today safely
+      // RULE 1: Allow authenticated users to increment views_today by exactly 1
+      // Accepted risk: anonymous users can loop this, but views_today resets daily
+      // and is a vanity metric only. Client dedup via _viewedThisSession mitigates.
       allow update: if request.auth != null && 
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views_today']) &&
                        request.resource.data.views_today == resource.data.views_today + 1;
       
-      // Allow authenticated partners to update their own distributor record
+      // RULE 2: Partners can ONLY update these specific operational fields
+      // Prevents injection of arbitrary keys (name, lat, lng, views_today, etc.)
       allow update: if request.auth != null && 
                        !request.auth.token.isAnonymous &&
-                       request.auth.uid == distributorId;
+                       request.auth.uid == distributorId &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['stock_status', 'last_updated', 'updated_by', 'conflict_flag', 'walk_in', 'upi', 'types']) &&
+                       // Validate stock_status enum if it's being changed
+                       (
+                         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['stock_status']) ||
+                         request.resource.data.stock_status in ['available', 'low', 'out', 'unknown']
+                       ) &&
+                       // Validate types array if it's being changed
+                       (
+                         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['types']) ||
+                         (request.resource.data.types is list && request.resource.data.types.size() <= 5)
+                       );
                        
       // Creating/deleting distributors is admin-only (via Admin SDK in scripts)
       allow create, delete: if false;
     }
 
-    // REPORTS COLLECTION (User check-ins)
+    // ============================================================
+    // REPORTS COLLECTION (User stock check-ins)
+    // ============================================================
     match /reports/{reportId} {
-      // Authenticated users can create reports with validated schema
+      // Authenticated users can create reports with strict schema validation
       allow create: if request.auth != null &&
-                       request.resource.data.keys().hasAll(['distributor_id', 'status', 'timestamp', 'user_id']) &&
+                       // Must have exactly these keys (no extra payload injection)
+                       request.resource.data.keys().hasAll(['distributor_id', 'status', 'timestamp', 'user_id', 'lat', 'lng']) &&
+                       request.resource.data.keys().size() <= 6 &&
+                       // Validate types
+                       request.resource.data.distributor_id is string &&
+                       request.resource.data.distributor_id.size() > 0 &&
+                       request.resource.data.distributor_id.size() <= 128 &&
                        request.resource.data.status in ['available', 'low', 'out'] &&
                        request.resource.data.user_id == request.auth.uid &&
-                       request.resource.data.timestamp == request.time;
+                       request.resource.data.timestamp == request.time &&
+                       request.resource.data.lat is number &&
+                       request.resource.data.lng is number;
                        
       // No client reads (prevents scraping). Admin SDK reads for consensus.
       allow read, update, delete: if false;
     }
 
-    // PENDING PARTNERS COLLECTION
+    // ============================================================
+    // PENDING PARTNERS COLLECTION (Self-registration queue)
+    // ============================================================
     match /pending_partners/{docId} {
-      // Anyone can submit a registration (with size limits)
-      allow create: if request.resource.data.keys().hasAll(['name', 'oil_company', 'lat', 'lng', 'email']) &&
+      // Only authenticated users can submit (prevents raw API spam)
+      allow create: if request.auth != null &&
+                       // Required fields
+                       request.resource.data.keys().hasAll(['name', 'oil_company', 'lat', 'lng', 'email']) &&
+                       // Max field count to prevent payload bloat
+                       request.resource.data.keys().size() <= 12 &&
+                       // Validate types and lengths
                        request.resource.data.name is string &&
+                       request.resource.data.name.size() >= 3 &&
                        request.resource.data.name.size() <= 100 &&
                        request.resource.data.email is string &&
+                       request.resource.data.email.size() >= 5 &&
                        request.resource.data.email.size() <= 100 &&
+                       request.resource.data.oil_company in ['Indane', 'HP Gas', 'Bharat Gas', 'Other'] &&
                        request.resource.data.lat is number &&
-                       request.resource.data.lng is number;
+                       request.resource.data.lng is number &&
+                       // Reject coordinates outside India bounding box
+                       request.resource.data.lat >= 6.0 &&
+                       request.resource.data.lat <= 36.0 &&
+                       request.resource.data.lng >= 68.0 &&
+                       request.resource.data.lng <= 98.0;
       
       // Only admins can read/update/delete (enforced by Firebase Admin SDK)
       allow read, update, delete: if false;
+    }
+
+    // ============================================================
+    // DENY-ALL CATCH-ALL: Block access to any undeclared collection
+    // Without this, new collections are open by default
+    // ============================================================
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
