@@ -34,14 +34,14 @@
             <form id="register-form">
                 <div class="form-group">
                     <label for="agency-name">Gas Agency Name</label>
-                    <input type="text" id="agency-name" class="form-control" required placeholder="e.g. Ramesh Gas Agency" value="Demo Gas Agency">
+                    <input type="text" id="agency-name" class="form-control" required placeholder="e.g. Ramesh Gas Agency" maxlength="100">
                 </div>
                 
                 <div class="form-group">
                     <label for="company">Oil Company</label>
                     <select id="company" class="form-control" required>
                         <option value="">Select Company</option>
-                        <option value="Indane" selected>Indane (IOCL)</option>
+                        <option value="Indane">Indane (IOCL)</option>
                         <option value="HP Gas">HP Gas (HPCL)</option>
                         <option value="Bharat Gas">Bharat Gas (BPCL)</option>
                         <option value="Other">Other Private Supplier</option>
@@ -50,17 +50,43 @@
                 
                 <div class="form-group">
                     <label for="dealer-code">Dealer License Code / SAP Code</label>
-                    <input type="text" id="dealer-code" class="form-control" required placeholder="Used for official verification" value="IND-49201-XYZ">
+                    <input type="text" id="dealer-code" class="form-control" required placeholder="Used for official verification" maxlength="30">
+                    <p style="font-size: 0.75rem; color: var(--text-sec); margin-top: 0.25rem;">This code will be verified against oil company records before your listing goes live.</p>
                 </div>
                 
                 <div class="form-group">
                     <label for="phone">Customer Booking Phone Number</label>
-                    <input type="tel" id="phone" class="form-control" required placeholder="+91" value="+919876543210">
+                    <input type="tel" id="phone" class="form-control" required placeholder="+91" maxlength="15" pattern="[\+]?[0-9]{10,15}">
+                </div>
+
+                <!-- OTP Verification Section -->
+                <div class="otp-section" id="otp-section">
+                    <h3>📱 Verify Phone Ownership</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-sec);">We'll send a one-time code to this number to confirm you own this agency's phone line.</p>
+                    <div id="otp-request-area">
+                        <button type="button" id="send-otp-btn" class="secondary-btn" style="width: 100%;">
+                            <span class="material-icons-round">sms</span>
+                            Send Verification Code
+                        </button>
+                    </div>
+                    <div id="otp-verify-area" style="display: none;">
+                        <div class="otp-input-group">
+                            <input type="text" id="otp-input" maxlength="6" placeholder="------" inputmode="numeric" autocomplete="one-time-code">
+                            <button type="button" id="verify-otp-btn" class="primary-btn">Verify</button>
+                        </div>
+                        <p class="otp-timer" id="otp-timer">Code valid for <strong>5:00</strong></p>
+                    </div>
+                    <div id="otp-success-area" style="display: none;">
+                        <div class="otp-success">
+                            <span class="material-icons-round">verified</span>
+                            Phone number verified
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" style="margin-top: 1rem;">
                     <label for="email">Owner Email Address</label>
-                    <input type="email" id="email" class="form-control" required placeholder="For login dashboard" value="test@indane.com">
+                    <input type="email" id="email" class="form-control" required placeholder="For login dashboard" maxlength="100">
                 </div>
                 
                 <div class="form-group">
@@ -73,16 +99,23 @@
                     <div id="location-status" style="font-size: 0.8rem; color: var(--status-green); margin-top: 0.5rem; display: none;">Location acquired successfully.</div>
                 </div>
 
+                <!-- Honeypot: invisible to humans, bots will fill it -->
+                <div class="hp-field" aria-hidden="true">
+                    <label for="website">Website</label>
+                    <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                </div>
+
                 <div id="error-message" style="color: var(--status-red); font-size: 0.875rem; margin-bottom: 1rem; display: none;"></div>
                 
                 <button type="submit" id="submit-btn" class="primary-btn" style="width: 100%; margin-top: 1rem;" disabled>Submit Registration</button>
+                <p style="font-size: 0.75rem; color: var(--text-sec); margin-top: 0.75rem; text-align: center;">Registrations are manually reviewed. Fake submissions will be permanently blocked.</p>
             </form>
         </div>
 
         <div class="card hidden" id="success-card" style="text-align: center; padding: 3rem 1rem;">
             <span class="material-icons-round" style="font-size: 4rem; color: var(--status-green); margin-bottom: 1rem;">check_circle</span>
             <h2>Registration Submitted!</h2>
-            <p style="margin-bottom: 1.5rem; color: var(--text-sec);">We have received your details. We will verify your dealer code and email you your login credentials shortly.</p>
+            <p style="margin-bottom: 1.5rem; color: var(--text-sec);">We have received your details. We will verify your dealer code against oil company records and email you your login credentials within 24-48 hours.</p>
             <a href="index.html" class="primary-btn" style="text-decoration: none;">Return to Map</a>
         </div>
     </main>
