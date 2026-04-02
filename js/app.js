@@ -1,4 +1,4 @@
-import { db, collection, onSnapshot, query } from './firebase.js';
+import { db, collection, onSnapshot, query, getDocs, doc, setDoc, addDoc, serverTimestamp, increment, where, limit } from './firebase.js';
 import { initAuth } from './auth.js';
 import { scoreDistributors } from './score.js';
 import { handleReport } from './reports.js';
@@ -26,6 +26,7 @@ const loadingOverlay = document.getElementById('loading-overlay');
 const filterChips = document.querySelectorAll('.filter-chip');
 const langSelect = document.getElementById('lang-select');
 
+// Bootstrap & Initialization
 async function init() {
     const userType = localStorage.getItem('cylindr_user_type');
     const welcomeOverlay = document.getElementById('welcome-overlay');
@@ -75,6 +76,10 @@ function startApp() {
     setupEventListeners();
 
     initAuth().catch(err => console.warn('Auth init skipped:', err));
+    
+    // Initialize new features
+    initVisitorCounter();
+    initFeedbackForm();
 }
 
 function applyTranslations() {
@@ -248,7 +253,24 @@ function createCustomIcon(status, hasConflict) {
 }
 
 function listenToDistributors() {
-    const q = query(collection(db, "distributors"));
+    let q;
+    
+    if (userLocation) {
+        // Create an approximate latitude bounding box (~111km radius) to limit reads.
+        const minLat = userLocation.lat - 1.0;
+        const maxLat = userLocation.lat + 1.0;
+        
+        q = query(
+            collection(db, "distributors"),
+            where("lat", ">=", minLat),
+            where("lat", "<=", maxLat),
+            limit(100)
+        );
+    } else {
+        // Fallback for missing location, hard limit to 100 random agencies
+        q = query(collection(db, "distributors"), limit(100));
+    }
+    
     onSnapshot(q, (snapshot) => {
         const distributors = [];
         snapshot.forEach((doc) => {
@@ -562,7 +584,7 @@ function showRecommendation(distributor) {
 
 // Analytics tracking
 import { db as analyticsDb, doc as analyticsDoc } from './firebase.js';
-import { increment, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
+import { updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
 
 const _viewedThisSession = new Set();
 
@@ -597,6 +619,118 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 
 function deg2rad(deg) {
     return deg * (Math.PI/180);
+}
+
+// -----------------------------------------------------------------
+// SCALABLE GLOBAL VISITOR COUNTER
+// -----------------------------------------------------------------
+const NUM_SHARDS = 5;
+const VISITS_CACHE_KEY = 'cylindr_visitor_count';
+const VISITS_CACHE_TIME = 'cylindr_visitor_cache_time';
+const SESSION_VISIT_KEY = 'cylindr_visited_session';
+
+async function initVisitorCounter() {
+    const cachedCount = sessionStorage.getItem(VISITS_CACHE_KEY);
+    const cacheTime = sessionStorage.getItem(VISITS_CACHE_TIME);
+    const counterContainer = document.getElementById('visitor-counter-container');
+    const counterText = document.getElementById('visitor-count-text');
+    
+    if (cachedCount) {
+        counterText.textContent = formatVisitorCount(parseInt(cachedCount));
+        counterContainer.style.display = 'flex';
+    }
+
+    const now = Date.now();
+    // Refresh counter every 15 mins
+    if (!cacheTime || (now - parseInt(cacheTime) > 15 * 60 * 1000)) {
+        try {
+            const shardsRef = collection(db, 'stats/visits/shards');
+            const snapshot = await getDocs(shardsRef);
+            let total = 0;
+            snapshot.forEach(docSnap => { total += docSnap.data().count || 0; });
+            
+            sessionStorage.setItem(VISITS_CACHE_KEY, total.toString());
+            sessionStorage.setItem(VISITS_CACHE_TIME, now.toString());
+            counterText.textContent = formatVisitorCount(total);
+            counterContainer.style.display = 'flex';
+        } catch (e) {
+            console.error("Failed to fetch visitor count:", e);
+        }
+    }
+    
+    // Scalable increment: Increment a random shard exactly once per session
+    if (!sessionStorage.getItem(SESSION_VISIT_KEY)) {
+        sessionStorage.setItem(SESSION_VISIT_KEY, 'true');
+        const shardId = Math.floor(Math.random() * NUM_SHARDS).toString();
+        const shardRef = doc(db, 'stats', 'visits', 'shards', shardId);
+        try {
+            await setDoc(shardRef, { count: increment(1) }, { merge: true });
+        } catch(e) { console.error("Counter increment failed:", e); }
+    }
+}
+
+function formatVisitorCount(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+    return num.toString();
+}
+
+// -----------------------------------------------------------------
+// FEEDBACK FORM SYSTEM
+// -----------------------------------------------------------------
+function initFeedbackForm() {
+    const openBtn = document.getElementById('floating-feedback-btn');
+    const closeBtn = document.getElementById('close-feedback-btn');
+    const submitBtn = document.getElementById('submit-feedback-btn');
+    const modal = document.getElementById('feedback-modal');
+    const textEl = document.getElementById('feedback-text');
+    const errorEl = document.getElementById('feedback-error');
+    
+    if (!openBtn || !modal) return;
+    
+    openBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        textEl.value = '';
+        errorEl.style.display = 'none';
+        textEl.focus();
+    });
+    
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+    
+    // Close on overlay click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+    });
+    
+    submitBtn.addEventListener('click', async () => {
+        const message = textEl.value.trim();
+        if (message.length < 5) {
+            errorEl.textContent = 'Please enter at least 5 characters.';
+            errorEl.style.display = 'block';
+            return;
+        }
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+        
+        try {
+            await addDoc(collection(db, 'user_feedback'), {
+                message: message,
+                timestamp: serverTimestamp()
+            });
+            modal.classList.add('hidden');
+            alert('✅ Thank you! Your feedback has been submitted.');
+        } catch (e) {
+            console.error("Feedback error:", e);
+            errorEl.textContent = 'Failed to submit feedback. Please try again.';
+            errorEl.style.display = 'block';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Feedback';
+        }
+    });
 }
 
 // Bootstrap

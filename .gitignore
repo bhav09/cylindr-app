@@ -22,3 +22,6 @@ Thumbs.db
 
 # Internal documents
 *.docx
+
+playwright-report/
+test-results/

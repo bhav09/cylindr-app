@@ -93,6 +93,37 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // USER FEEDBACK COLLECTION
+    // ============================================================
+    match /user_feedback/{docId} {
+      // Allow anyone to submit feedback
+      allow create: if request.resource.data.keys().hasAll(['message', 'timestamp']) &&
+                       request.resource.data.keys().size() <= 4 &&
+                       request.resource.data.message is string &&
+                       request.resource.data.message.size() > 0 &&
+                       request.resource.data.message.size() <= 3000 &&
+                       request.resource.data.timestamp == request.time;
+      
+      allow read, update, delete: if false;
+    }
+
+    // ============================================================
+    // STATS & COUNTERS (Sharded Global Visitor Counter)
+    // ============================================================
+    match /stats/{docId} {
+      match /shards/{shardId} {
+        // Anyone can read the sharded count
+        allow read: if true;
+        // Anyone can increment a shard by exactly 1, or create one if it doesn't exist
+        allow create: if request.resource.data.keys().hasOnly(['count']) &&
+                         request.resource.data.count == 1;
+        allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['count']) &&
+                         request.resource.data.count == resource.data.count + 1;
+      }
+      allow read, write: if false;
+    }
+
+    // ============================================================
     // DENY-ALL CATCH-ALL: Block access to any undeclared collection
     // Without this, new collections are open by default
     // ============================================================
