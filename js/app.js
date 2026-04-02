@@ -1,4 +1,4 @@
-import { db, collection, onSnapshot, query, getDocs, doc, setDoc, addDoc, serverTimestamp, increment, where, limit } from './firebase.js';
+import { db, collection, onSnapshot, query, getDocs, doc, setDoc, addDoc, serverTimestamp, increment, updateDoc, where, limit } from './firebase.js';
 import { initAuth } from './auth.js';
 import { scoreDistributors } from './score.js';
 import { handleReport } from './reports.js';
@@ -71,7 +71,7 @@ function startApp() {
     applyTranslations();
     
     // We start auth in the background, but immediately trigger location fetching.
-    // The loading screen will stay up until location is found AND mock pins are drawn.
+    // The loading screen will stay up until location is found AND pins are drawn.
     getUserLocation();
     setupEventListeners();
 
@@ -80,6 +80,17 @@ function startApp() {
     // Initialize new features
     initVisitorCounter();
     initFeedbackForm();
+
+    // Failsafe: force-hide the loading overlay after 10s maximum.
+    // This prevents the user from ever getting permanently stuck on the loading screen
+    // if Firestore returns no data (e.g., empty collection, geo-query returns nothing).
+    setTimeout(() => {
+        if (loadingOverlay && loadingOverlay.style.display !== 'none') {
+            console.warn('Failsafe: Loading overlay hidden after 10s timeout.');
+            loadingOverlay.style.opacity = '0';
+            setTimeout(() => { loadingOverlay.style.display = 'none'; }, 400);
+        }
+    }, 10000);
 }
 
 function applyTranslations() {
@@ -583,9 +594,6 @@ function showRecommendation(distributor) {
 }
 
 // Analytics tracking
-import { db as analyticsDb, doc as analyticsDoc } from './firebase.js';
-import { updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
-
 const _viewedThisSession = new Set();
 
 async function logAnalytics(distributorId, actionType) {
@@ -594,7 +602,7 @@ async function logAnalytics(distributorId, actionType) {
         if (_viewedThisSession.has(distributorId)) return;
         _viewedThisSession.add(distributorId);
         try {
-            const docRef = analyticsDoc(analyticsDb, 'distributors', distributorId);
+            const docRef = doc(db, 'distributors', distributorId);
             await updateDoc(docRef, {
                 views_today: increment(1)
             });
@@ -632,19 +640,20 @@ const SESSION_VISIT_KEY = 'cylindr_visited_session';
 async function initVisitorCounter() {
     const cachedCount = sessionStorage.getItem(VISITS_CACHE_KEY);
     const cacheTime = sessionStorage.getItem(VISITS_CACHE_TIME);
-    const counterContainer = document.getElementById('visitor-counter-container');
     const counterText = document.getElementById('visitor-count-text');
+    if (!counterText) return;
     
+    // Show cached count instantly while we wait for the fresh fetch
     if (cachedCount) {
         counterText.textContent = formatVisitorCount(parseInt(cachedCount));
-        counterContainer.style.display = 'flex';
     }
 
     const now = Date.now();
-    // Refresh counter every 15 mins
+    // Only re-fetch from Firestore every 15 minutes to protect read quotas
     if (!cacheTime || (now - parseInt(cacheTime) > 15 * 60 * 1000)) {
         try {
-            const shardsRef = collection(db, 'stats/visits/shards');
+            // Correct subcollection path: doc('stats','visits') → collection('shards')
+            const shardsRef = collection(doc(db, 'stats', 'visits'), 'shards');
             const snapshot = await getDocs(shardsRef);
             let total = 0;
             snapshot.forEach(docSnap => { total += docSnap.data().count || 0; });
@@ -652,13 +661,13 @@ async function initVisitorCounter() {
             sessionStorage.setItem(VISITS_CACHE_KEY, total.toString());
             sessionStorage.setItem(VISITS_CACHE_TIME, now.toString());
             counterText.textContent = formatVisitorCount(total);
-            counterContainer.style.display = 'flex';
         } catch (e) {
             console.error("Failed to fetch visitor count:", e);
+            // Keep showing cached value or placeholder — don't crash
         }
     }
     
-    // Scalable increment: Increment a random shard exactly once per session
+    // Scalable increment: write to a random shard exactly once per browser session
     if (!sessionStorage.getItem(SESSION_VISIT_KEY)) {
         sessionStorage.setItem(SESSION_VISIT_KEY, 'true');
         const shardId = Math.floor(Math.random() * NUM_SHARDS).toString();

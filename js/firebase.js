@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
-import { getFirestore, collection, onSnapshot, getDocs, doc, setDoc, addDoc, serverTimestamp, query, where, limit, increment } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
+import { getFirestore, collection, onSnapshot, getDocs, doc, setDoc, addDoc, serverTimestamp, query, where, limit, increment, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js';
 
 const firebaseConfig = {
@@ -12,28 +12,29 @@ const firebaseConfig = {
     measurementId: "G-ZRJ7DLMFG2"
 };
 
-import { initializeAppCheck, ReCaptchaV3Provider } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app-check.js';
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Guardrail: Firebase App Check (reCAPTCHA v3)
-// Prevents automated bots and scripts from spamming your Firebase endpoints.
-try {
-    // For localhost testing, use a debug token (Will print in console to enter in Firebase)
-    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-        self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-    }
-    
-    // Initialize App Check (Ensure you replace with your real reCAPTCHA v3 site key in Production)
-    const appCheck = initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider('6Lc_REPLACE_WITH_YOUR_REAL_RECAPTCHA_V3_SITE_KEY'),
-        isTokenAutoRefreshEnabled: true
-    });
-} catch (error) {
-    console.warn("App Check initialization skipped or failed (Ensure it's setup in Firebase Console):", error);
-}
+// NOTE on Firebase App Check:
+// App Check (reCAPTCHA v3 bot protection) is READY to be enabled.
+// To activate it:
+//   1. Go to Firebase Console → Build → App Check → Register your web app
+//   2. Generate a reCAPTCHA v3 site key at https://www.google.com/recaptcha/admin
+//   3. Uncomment the block below and replace the placeholder key with your real key.
+//
+// import { initializeAppCheck, ReCaptchaV3Provider } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app-check.js';
+// try {
+//     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+//         self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+//     }
+//     initializeAppCheck(app, {
+//         provider: new ReCaptchaV3Provider('YOUR_REAL_RECAPTCHA_V3_SITE_KEY'),
+//         isTokenAutoRefreshEnabled: true
+//     });
+// } catch (e) {
+//     console.warn('App Check init failed:', e);
+// }
 
-export { app, db, auth, collection, onSnapshot, getDocs, doc, setDoc, addDoc, serverTimestamp, query, where, limit, increment, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut };
+export { app, db, auth, collection, onSnapshot, getDocs, doc, setDoc, addDoc, serverTimestamp, query, where, limit, increment, updateDoc, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut };
