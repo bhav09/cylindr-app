@@ -31,6 +31,10 @@ async function init() {
     const userType = localStorage.getItem('cylindr_user_type');
     const welcomeOverlay = document.getElementById('welcome-overlay');
 
+    // Always run the visitor counter on every page load (not gated behind user type)
+    // so the live count is visible to everyone including first-time visitors.
+    initVisitorCounter();
+
     if (!userType) {
         welcomeOverlay.classList.remove('hidden');
         setupWelcomeScreen();
@@ -77,8 +81,7 @@ function startApp() {
 
     initAuth().catch(err => console.warn('Auth init skipped:', err));
     
-    // Initialize new features
-    initVisitorCounter();
+    // Initialize feedback (visitor counter is already called from init())
     initFeedbackForm();
 
     // Failsafe: force-hide the loading overlay after 10s maximum.

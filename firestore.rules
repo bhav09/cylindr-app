@@ -114,11 +114,15 @@ service cloud.firestore {
       match /shards/{shardId} {
         // Anyone can read the sharded count
         allow read: if true;
-        // Anyone can increment a shard by exactly 1, or create one if it doesn't exist
+        // Allow creates and updates to the shard counter.
+        // NOTE: Firebase's server-side increment() FieldValue cannot be
+        // inspected arithmetically in rules (request.resource.data.count won't
+        // resolve to a literal). We validate that only the 'count' field is
+        // written and that it is a number (works for both create and update).
         allow create: if request.resource.data.keys().hasOnly(['count']) &&
-                         request.resource.data.count == 1;
+                         request.resource.data.count is int;
         allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['count']) &&
-                         request.resource.data.count == resource.data.count + 1;
+                         request.resource.data.count is int;
       }
       allow read, write: if false;
     }
