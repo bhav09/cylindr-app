@@ -636,6 +636,7 @@ function deg2rad(deg) {
 // SCALABLE GLOBAL VISITOR COUNTER
 // -----------------------------------------------------------------
 const NUM_SHARDS = 5;
+const BASE_VISITOR_COUNT = 99; // Starting baseline — counter shows 99 + real visitors
 const VISITS_CACHE_KEY = 'cylindr_visitor_count';
 const VISITS_CACHE_TIME = 'cylindr_visitor_cache_time';
 const SESSION_VISIT_KEY = 'cylindr_visited_session';
@@ -648,7 +649,7 @@ async function initVisitorCounter() {
     
     // Show cached count instantly while we wait for the fresh fetch
     if (cachedCount) {
-        counterText.textContent = formatVisitorCount(parseInt(cachedCount));
+        counterText.textContent = formatVisitorCount(BASE_VISITOR_COUNT + parseInt(cachedCount));
     }
 
     const now = Date.now();
@@ -663,7 +664,7 @@ async function initVisitorCounter() {
             
             sessionStorage.setItem(VISITS_CACHE_KEY, total.toString());
             sessionStorage.setItem(VISITS_CACHE_TIME, now.toString());
-            counterText.textContent = formatVisitorCount(total);
+            counterText.textContent = formatVisitorCount(BASE_VISITOR_COUNT + total);
         } catch (e) {
             console.error("Failed to fetch visitor count:", e);
             // Keep showing cached value or placeholder — don't crash

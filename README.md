@@ -6,8 +6,6 @@ Cylindr is a community-driven Progressive Web App (PWA) that shows you which loc
 
 🔗 **Live App:** [https://bhav09.github.io/cylindr-app/](https://bhav09.github.io/cylindr-app/)
 
----
-
 ## 🏠 For Consumers
 
 | Feature | What it does |
@@ -19,8 +17,6 @@ Cylindr is a community-driven Progressive Web App (PWA) that shows you which loc
 | **Cylinder Filter** | One tap to filter by 14.2kg • 5kg • 19kg cylinder size |
 | **Notify Me** | Get push alerts the moment an out-of-stock agency restocks |
 
----
-
 ## 🚚 For Distributors & Agency Owners
 
 | Feature | What it does |
@@ -31,18 +27,14 @@ Cylindr is a community-driven Progressive Web App (PWA) that shows you which loc
 | **Dealer Code Check** | Your Indane / HP Gas / Bharat Gas SAP/license code is recorded for manual verification before your listing goes live |
 | **Foot Traffic** | Customers who arrive are pre-filtered by payment type (UPI/Cash) and walk-in preference |
 
----
-
 ## 🔒 Security & Scale
 
 - **Firestore Rules:** Server-enforced schema validation on all write paths; no raw injection possible
-- **Geo-bounded Queries:** App only fetches up to 100 agencies within a 100km radius — billing quota safe under any traffic load  
-- **Sharded Visitor Counter:** Global visit count spread across 5 Firestore shards to bypass write-rate limits — accurate at millions of requests/day  
-- **Bot Protections:** Honeypot fields + form speed analysis on registration; rate-limited reporting (1 report/agency/5min)  
-- **XSS Prevention:** All user-supplied data rendered via `textContent` / DOM construction — no `innerHTML` on untrusted data  
+- **Geo-bounded Queries:** App only fetches up to 100 agencies within a 100km radius — billing quota safe under any traffic load
+- **Sharded Visitor Counter:** Global visit count spread across 5 Firestore shards to bypass write-rate limits — accurate at millions of requests/day
+- **Bot Protections:** Honeypot fields + form speed analysis on registration; rate-limited reporting (1 report/agency/5min)
+- **XSS Prevention:** All user-supplied data rendered via `textContent` / DOM construction — no `innerHTML` on untrusted data
 - **App Check Ready:** Firebase App Check (reCAPTCHA v3) is scaffolded and ready to enable when a site key is configured
-
----
 
 ## 🧪 Automated Testing
 
@@ -51,12 +43,10 @@ End-to-End tests (Playwright) cover:
 - Language toggle
 - Partner portal access
 - Login validation
-- Registration bot-protection checks  
+- Registration bot-protection checks
 - **Full partner onboarding** — fills form, auto-captures OTP from JS alert, verifies, waits past bot-speed-check, submits
 
 Run tests: `npm run test:e2e`
-
----
 
 ## 🛠 Tech Stack
 
